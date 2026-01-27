@@ -90,7 +90,7 @@ const manufacturerData: {
 };
 
 const tableMap: { [key: string]: string } = {
-  A: "bernhardt_products",
+  A: "bernhardt_products_modified",
   B: "ashley_products",
   C: "coaster_products",
   D: "luonto_products",
