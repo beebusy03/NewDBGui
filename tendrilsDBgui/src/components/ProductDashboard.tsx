@@ -32,6 +32,8 @@ import {
   Check,
   SlidersHorizontal,
   Circle,
+  Tag,
+  LogOut,
 } from "lucide-react";
 
 import "./ProductDashboard.css";
@@ -87,6 +89,18 @@ const manufacturerData: {
     color: "#a855f7",
     description: "New products",
   },
+  I: {
+    name: "Fjords",
+    icon: "armchair2",
+    color: "#0ea5e9",
+    description: "Norwegian recliners",
+  },
+  J: {
+    name: "JNM",
+    icon: "tag",
+    color: "#84cc16",
+    description: "Modern furniture",
+  },
 };
 
 const tableMap: { [key: string]: string } = {
@@ -98,6 +112,8 @@ const tableMap: { [key: string]: string } = {
   F: "shopify_carts",
   G: "massiano_inventory",
   H: "universal_newproducts_modified",
+  I: "fjords_products",
+  J: "jnm_products",
 };
 
 const manufacturerColumns: { [key: string]: { key: string; label: string; sortable?: boolean }[] } = {
@@ -113,9 +129,11 @@ const manufacturerColumns: { [key: string]: { key: string; label: string; sortab
     { key: "last_updated", label: "Updated" },
   ],
   B: [
-    { key: "product_name", label: "Name" },
+    { key: "product_name", label: "Product Name" },
     { key: "product_sku", label: "SKU" },
+    { key: "product_details_int1", label: "Price" },
     { key: "product_status", label: "Status", sortable: true },
+    { key: "inventory_availability", label: "Availability", sortable: true },
     { key: "inventory_qtyvalue", label: "Qty" },
     { key: "last_updated", label: "Updated" },
   ],
@@ -124,13 +142,15 @@ const manufacturerColumns: { [key: string]: { key: string; label: string; sortab
     { key: "product_status", label: "Status", sortable: true },
     { key: "inventory_qtyvalue", label: "Qty" },
     { key: "last_updated", label: "Updated" },
+    { key: "inventory_availability", label: "Available Inventory", sortable: true },
   ],
   D: [
     { key: "id", label: "ID" },
-    { key: "productname", label: "Name" },
+    { key: "productname", label: "Product Name" },
     { key: "productsku", label: "SKU" },
     { key: "availability", label: "Availability", sortable: true },
-    { key: "last_updated", label: "Updated" },
+    { key: "status", label: "Status", sortable: true },
+    { key: "next_available_date", label: "Next Available" },
   ],
   E: [
     { key: "id", label: "ID" },
@@ -171,6 +191,27 @@ const manufacturerColumns: { [key: string]: { key: string; label: string; sortab
     { key: "availability_date", label: "Availability Date" },
     { key: "last_updated", label: "Updated" },
   ],
+  I: [
+    { key: "sku", label: "SKU" },
+    { key: "model", label: "Model" },
+    { key: "collection", label: "Collection" },
+    { key: "item_name", label: "Item Name" },
+    { key: "in_stock", label: "In Stock", sortable: true },
+    { key: "next_avail", label: "Next Avail Qty" },
+    { key: "next_avail_date", label: "Next Avail Date" },
+    { key: "next_avail_status", label: "Avail Status", sortable: true },
+    { key: "created_time", label: "Created" },
+    { key: "updated_time", label: "Updated" },
+  ],
+  J: [
+    { key: "id", label: "ID" },
+    { key: "sku", label: "SKU" },
+    { key: "manufacturers_sku", label: "Manufacturer SKU" },
+    { key: "qty_in_stock", label: "Qty In Stock" },
+    { key: "eta_date", label: "ETA Date" },
+    { key: "discontinued", label: "Discontinued", sortable: true },
+    { key: "last_updated", label: "Updated" },
+  ],
 };
 
 const PAGE_SIZE = 20;
@@ -185,7 +226,11 @@ interface GlobalSearchResult {
 
 interface SortConfig {
   column: string;
-  priorityValue: string | null; // The status value to show first
+  priorityValue: string | null;
+}
+
+interface ProductDashboardProps {
+  onLogout?: () => void;
 }
 
 // Extract unique values from data for a specific column
@@ -213,31 +258,38 @@ function getValueCounts(data: any[], column: string): { [key: string]: number } 
   return counts;
 }
 
-// Sorting Dropdown Component
+// Get all sortable columns for a manufacturer
+function getSortableColumns(manufacturerKey: string): { key: string; label: string }[] {
+  const columns = manufacturerColumns[manufacturerKey];
+  if (!columns) return [];
+  return columns.filter(col => col.sortable).map(col => ({ key: col.key, label: col.label }));
+}
+
+// Sorting Dropdown Component with multiple column support
 interface SortDropdownProps {
   currentSort: SortConfig;
-  statusColumn: string;
+  sortableColumns: { key: string; label: string }[];
   onSortChange: (column: string, priorityValue: string | null) => void;
   accentColor?: string;
-  columnLabel?: string;
   data: any[];
 }
 
 function SortDropdown({ 
   currentSort, 
-  statusColumn, 
+  sortableColumns,
   onSortChange, 
   accentColor, 
-  columnLabel = "Status",
   data 
 }: SortDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState<string>(sortableColumns[0]?.key || "");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const uniqueValues = useMemo(() => getUniqueValues(data, statusColumn), [data, statusColumn]);
-  const valueCounts = useMemo(() => getValueCounts(data, statusColumn), [data, statusColumn]);
+  const uniqueValues = useMemo(() => getUniqueValues(data, selectedColumn), [data, selectedColumn]);
+  const valueCounts = useMemo(() => getValueCounts(data, selectedColumn), [data, selectedColumn]);
 
-  const isActive = currentSort.column === statusColumn && currentSort.priorityValue !== null;
+  const isActive = currentSort.column !== "" && currentSort.priorityValue !== null;
+  const currentColumnLabel = sortableColumns.find(col => col.key === currentSort.column)?.label || "";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -258,14 +310,16 @@ function SortDropdown({
   }, []);
 
   const handleOptionSelect = (value: string | null) => {
-    onSortChange(statusColumn, value);
+    onSortChange(selectedColumn, value);
     setIsOpen(false);
   };
 
   const getCurrentLabel = () => {
-    if (!isActive) return "All Statuses";
-    return currentSort.priorityValue || "All Statuses";
+    if (!isActive) return "Default Order";
+    return `${currentColumnLabel}: ${currentSort.priorityValue}`;
   };
+
+  if (sortableColumns.length === 0) return null;
 
   return (
     <div 
@@ -297,8 +351,30 @@ function SortDropdown({
 
       {isOpen && (
         <div className="sort-dropdown-menu" role="listbox">
+          {/* Column selector if multiple sortable columns */}
+          {sortableColumns.length > 1 && (
+            <>
+              <div className="dropdown-header">
+                <span>Sort Column</span>
+              </div>
+              <div className="column-selector">
+                {sortableColumns.map(col => (
+                  <button
+                    key={col.key}
+                    className={`column-option ${selectedColumn === col.key ? "selected" : ""}`}
+                    onClick={() => setSelectedColumn(col.key)}
+                  >
+                    {col.label}
+                    {selectedColumn === col.key && <Check size={14} />}
+                  </button>
+                ))}
+              </div>
+              <div className="dropdown-divider"></div>
+            </>
+          )}
+
           <div className="dropdown-header">
-            <span>Prioritize by {columnLabel}</span>
+            <span>Prioritize by {sortableColumns.find(c => c.key === selectedColumn)?.label || "Status"}</span>
           </div>
           
           <div className="dropdown-options">
@@ -329,7 +405,7 @@ function SortDropdown({
             {/* Dynamic status options */}
             {uniqueValues.map((value) => {
               const count = valueCounts[value] || 0;
-              const isSelected = currentSort.priorityValue === value;
+              const isSelected = currentSort.column === selectedColumn && currentSort.priorityValue === value;
               
               return (
                 <button
@@ -358,7 +434,7 @@ function SortDropdown({
 
             {uniqueValues.length === 0 && (
               <div className="dropdown-empty">
-                <span>No status values found</span>
+                <span>No values found for this column</span>
               </div>
             )}
           </div>
@@ -429,7 +505,7 @@ function TableSortIndicator({ column, currentSort, uniqueValues, onSort }: Table
           {uniqueValues.map(value => (
             <button
               key={value}
-              className={`popup-option ${currentSort.priorityValue === value ? "selected" : ""}`}
+              className={`popup-option ${currentSort.priorityValue === value && currentSort.column === column ? "selected" : ""}`}
               onClick={() => { onSort(column, value); setShowPopup(false); }}
             >
               {value}
@@ -441,7 +517,7 @@ function TableSortIndicator({ column, currentSort, uniqueValues, onSort }: Table
   );
 }
 
-export default function ProductDashboard() {
+export default function ProductDashboard({ onLogout }: ProductDashboardProps) {
   const [selectedManufacturer, setSelectedManufacturer] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -466,22 +542,8 @@ export default function ProductDashboard() {
 
   const isGlobalSearchMode = !selectedManufacturer && searchQuery.length > 0;
 
-  const getStatusColumnKey = (manufacturerKey: string): string => {
-    const columns = manufacturerColumns[manufacturerKey];
-    if (!columns) return "";
-    const statusCol = columns.find(col => col.sortable);
-    return statusCol?.key || "";
-  };
-
-  const getStatusColumnLabel = (manufacturerKey: string): string => {
-    const columns = manufacturerColumns[manufacturerKey];
-    if (!columns) return "Status";
-    const statusCol = columns.find(col => col.sortable);
-    return statusCol?.label || "Status";
-  };
-
   const hasSortableColumn = (manufacturerKey: string): boolean => {
-    return !!getStatusColumnKey(manufacturerKey);
+    return getSortableColumns(manufacturerKey).length > 0;
   };
 
   // Sort function - prioritizes items with the selected status value
@@ -683,40 +745,49 @@ export default function ProductDashboard() {
     switch (iconType) {
       case "sofa": return <Sofa {...iconProps} />;
       case "armchair": return <Armchair {...iconProps} />;
+      case "armchair2": return <Armchair {...iconProps} />;
       case "lamp": return <Lamp {...iconProps} />;
       case "bed": return <BedDouble {...iconProps} />;
       case "cart": return <ShoppingCart {...iconProps} />;
       case "warehouse": return <Warehouse {...iconProps} />;
       case "box": return <Box {...iconProps} />;
+      case "tag": return <Tag {...iconProps} />;
       default: return <Package {...iconProps} />;
     }
   };
 
   const formatCellValue = (value: any, key: string) => {
-  if (value === null || value === undefined) return "-";
+    if (value === null || value === undefined) return "-";
 
-  // Check if the value is already a formatted price string (starts with $)
-  if (["msrp", "price", "amount", "retail_price", "your_price"].includes(key)) {
-    if (typeof value === "string" && value.startsWith("$")) {
-      // Already formatted, return as-is
-      return value;
+    // Check if the value is already a formatted price string (starts with $)
+    if (["msrp", "price", "amount", "retail_price", "your_price", "product_details_int1"].includes(key)) {
+      if (typeof value === "string" && value.startsWith("$")) {
+        return value;
+      }
+      if (value) {
+        return `$${parseFloat(value).toFixed(2)}`;
+      }
     }
-    if (value) {
-      // It's a number, format it
-      return `$${parseFloat(value).toFixed(2)}`;
+
+    if (["quantity", "received_qty", "pending_qty", "total_qty", "inventory_qtyvalue", "qty_in_stock", "in_stock", "next_avail"].includes(key) && value) {
+      return parseFloat(value).toLocaleString();
     }
-  }
 
-  if (["quantity", "received_qty", "pending_qty", "total_qty"].includes(key) && value) {
-    return parseFloat(value).toLocaleString();
-  }
+    if ((key.includes("date") || key.includes("updated") || key.includes("time") || key === "received_at") && value) {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString();
+      }
+    }
 
-  if (key.includes("date") || key.includes("updated") || key === "received_at") {
-    return new Date(value).toLocaleDateString();
-  }
+    // Boolean-like fields
+    if (key === "discontinued") {
+      if (value === true || value === "true" || value === 1 || value === "1") return "Yes";
+      if (value === false || value === "false" || value === 0 || value === "0") return "No";
+    }
 
-  return value;
-};
+    return value;
+  };
 
   const handleClearSelection = () => {
     setSelectedManufacturer("");
@@ -738,13 +809,6 @@ export default function ProductDashboard() {
   const getManufacturersWithResults = () => globalSearchResults.filter((r) => r.count > 0).length;
 
   const activeGlobalResult = globalSearchResults.find((r) => r.manufacturerKey === activeGlobalTab);
-
-  // Get unique values for current data
-  const currentUniqueValues = useMemo(() => {
-    if (!selectedManufacturer) return [];
-    const statusCol = getStatusColumnKey(selectedManufacturer);
-    return getUniqueValues(products, statusCol);
-  }, [products, selectedManufacturer]);
 
   return (
     <div className="dashboard-container">
@@ -774,6 +838,14 @@ export default function ProductDashboard() {
               Real-time inventory and product management across all manufacturers
             </p>
           </div>
+          
+          {/* Logout Button - Inside Header */}
+          {onLogout && (
+            <button className="logout-btn" onClick={onLogout}>
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -959,8 +1031,7 @@ export default function ProductDashboard() {
                       {hasSortableColumn(activeGlobalTab) && (
                         <SortDropdown
                           currentSort={globalSortConfigs[activeGlobalTab] || { column: "", priorityValue: null }}
-                          statusColumn={getStatusColumnKey(activeGlobalTab)}
-                          columnLabel={getStatusColumnLabel(activeGlobalTab)}
+                          sortableColumns={getSortableColumns(activeGlobalTab)}
                           onSortChange={(column, value) => handleGlobalSortFromDropdown(activeGlobalTab, column, value)}
                           accentColor={manufacturerData[activeGlobalTab].color}
                           data={activeGlobalResult.data}
@@ -979,7 +1050,7 @@ export default function ProductDashboard() {
                         <thead>
                           <tr>
                             {manufacturerColumns[activeGlobalTab].map((col) => (
-                              <th key={col.key} className={col.sortable ? "sortable" : ""}>
+                              <th key={col.key} className={`${col.sortable ? "sortable" : ""} ${col.key === "description" || col.key === "product_name" || col.key === "productname" || col.key === "name" || col.key === "item_name" ? "wide-column" : ""}`}>
                                 <div className="th-content">
                                   {col.label}
                                   {col.sortable && (
@@ -1001,8 +1072,10 @@ export default function ProductDashboard() {
                             <Fragment key={i}>
                               <tr className={expandedRows.includes(i) ? "expanded" : ""}>
                                 {manufacturerColumns[activeGlobalTab].map((col) => (
-                                  <td key={col.key}>
-                                    <span className="cell-content">{formatCellValue(row[col.key], col.key)}</span>
+                                  <td key={col.key} className={col.key === "description" || col.key === "product_name" || col.key === "productname" || col.key === "name" || col.key === "item_name" ? "wide-cell" : ""}>
+                                    <span className={`cell-content ${col.key === "description" || col.key === "product_name" || col.key === "productname" || col.key === "name" || col.key === "item_name" ? "full-text" : ""}`}>
+                                      {formatCellValue(row[col.key], col.key)}
+                                    </span>
                                   </td>
                                 ))}
                                 <td>
@@ -1089,8 +1162,7 @@ export default function ProductDashboard() {
             {hasSortableColumn(selectedManufacturer) && (
               <SortDropdown
                 currentSort={sortConfig}
-                statusColumn={getStatusColumnKey(selectedManufacturer)}
-                columnLabel={getStatusColumnLabel(selectedManufacturer)}
+                sortableColumns={getSortableColumns(selectedManufacturer)}
                 onSortChange={handleSortFromDropdown}
                 accentColor={manufacturerData[selectedManufacturer].color}
                 data={products}
@@ -1118,14 +1190,14 @@ export default function ProductDashboard() {
                     <thead>
                       <tr>
                         {manufacturerColumns[selectedManufacturer].map((col) => (
-                          <th key={col.key} className={col.sortable ? "sortable" : ""}>
+                          <th key={col.key} className={`${col.sortable ? "sortable" : ""} ${col.key === "description" || col.key === "product_name" || col.key === "productname" || col.key === "name" || col.key === "item_name" ? "wide-column" : ""}`}>
                             <div className="th-content">
                               {col.label}
                               {col.sortable && (
                                 <TableSortIndicator
                                   column={col.key}
                                   currentSort={sortConfig}
-                                  uniqueValues={currentUniqueValues}
+                                  uniqueValues={getUniqueValues(products, col.key)}
                                   onSort={handleSort}
                                 />
                               )}
@@ -1140,8 +1212,10 @@ export default function ProductDashboard() {
                         <Fragment key={`${row.id || row.sku || i}-${i}`}>
                           <tr className={expandedRows.includes(i) ? "expanded" : ""}>
                             {manufacturerColumns[selectedManufacturer].map((col) => (
-                              <td key={col.key}>
-                                <span className="cell-content">{formatCellValue(row[col.key], col.key)}</span>
+                              <td key={col.key} className={col.key === "description" || col.key === "product_name" || col.key === "productname" || col.key === "name" || col.key === "item_name" ? "wide-cell" : ""}>
+                                <span className={`cell-content ${col.key === "description" || col.key === "product_name" || col.key === "productname" || col.key === "name" || col.key === "item_name" ? "full-text" : ""}`}>
+                                  {formatCellValue(row[col.key], col.key)}
+                                </span>
                               </td>
                             ))}
                             <td>

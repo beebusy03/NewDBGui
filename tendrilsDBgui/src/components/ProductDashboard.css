@@ -53,6 +53,9 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-full: 9999px;
+
+  /* Table Height — controls how tall the scrollable area is */
+  --table-max-height: 75vh;
 }
 
 /* ========================================
@@ -224,6 +227,7 @@
   box-shadow: 
     0 8px 32px rgba(139, 92, 246, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
 }
 
 .header-icon {
@@ -250,6 +254,7 @@
 
 .header-content {
   flex: 1;
+  min-width: 0;
 }
 
 .header-title {
@@ -267,6 +272,44 @@
   font-size: 1rem;
   color: var(--color-text-secondary);
   font-weight: 400;
+}
+
+/* ========================================
+   Logout Button - Inside Header
+   ======================================== */
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-full);
+  color: #ef4444;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+}
+
+.logout-btn:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
 }
 
 /* ========================================
@@ -546,7 +589,6 @@
   opacity: 1;
 }
 
-/* Global search result states */
 .manufacturer-card.has-results {
   border-color: rgba(var(--card-color-rgb), 0.5);
 }
@@ -719,7 +761,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Global Loading */
 .global-loading {
   display: flex;
   flex-direction: column;
@@ -777,7 +818,6 @@
   100% { transform: translateX(400%); }
 }
 
-/* Global No Results */
 .global-no-results {
   display: flex;
   flex-direction: column;
@@ -814,7 +854,7 @@
   max-width: 400px;
 }
 
-/* Global Tabs Container */
+/* Global Tabs */
 .global-tabs-container {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--color-border);
@@ -902,6 +942,15 @@
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
+  overflow: visible;
+}
+
+.global-results-table > .table-header {
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.global-results-table > .table-content {
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   overflow: hidden;
 }
 
@@ -1014,7 +1063,7 @@
 }
 
 /* ========================================
-   Table Section
+   Table Section — overflow visible for dropdowns
    ======================================== */
 .table-section {
   position: relative;
@@ -1022,11 +1071,28 @@
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  overflow: hidden;
+  overflow: visible;
   animation: fadeIn 0.4s ease-out;
 }
 
+.table-section > .table-header {
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.table-section > .table-content {
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  overflow: hidden;
+}
+
+/* ========================================
+   Table Header
+   ======================================== */
 .table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
   background: rgba(255, 255, 255, 0.02);
@@ -1057,29 +1123,76 @@
 }
 
 /* ========================================
-   Data Table
+   Table Actions
    ======================================== */
-.table-container {
-  overflow-x: auto;
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
+/* ========================================
+   Data Table — FIXED: scrolls both ways
+   inside a capped-height box so the
+   horizontal scrollbar is always reachable
+   ======================================== */
+.table-container {
+  width: 100%;
+  max-height: var(--table-max-height);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+/* Horizontal scrollbar */
 .table-container::-webkit-scrollbar {
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 .table-container::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.02);
+  border-radius: 5px;
 }
 
 .table-container::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-indigo));
-  border-radius: 4px;
+  border-radius: 5px;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--color-accent-violet), var(--color-accent-purple));
+}
+
+.table-container::-webkit-scrollbar-corner {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Firefox scrollbar */
+.table-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent-purple) rgba(255, 255, 255, 0.02);
 }
 
 .data-table {
   width: 100%;
+  min-width: max-content;
   border-collapse: collapse;
   font-size: 0.875rem;
+  table-layout: auto;
+}
+
+/* ========================================
+   Sticky Header — stays visible while
+   scrolling vertically inside the box
+   ======================================== */
+.data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .data-table thead tr {
@@ -1096,12 +1209,23 @@
   color: var(--color-text-secondary);
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
-  position: sticky;
-  top: 0;
   background: var(--color-bg-secondary);
-  z-index: 10;
+  min-width: fit-content;
 }
 
+.data-table th .th-content {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.data-table th.sortable {
+  cursor: default;
+}
+
+/* ========================================
+   Table Body
+   ======================================== */
 .data-table tbody tr {
   border-bottom: 1px solid var(--color-border);
   transition: all var(--transition-fast);
@@ -1119,26 +1243,59 @@
   border-bottom: none;
 }
 
-.data-table td {
-  padding: 1rem 1.25rem;
-  color: var(--color-text-primary);
-  vertical-align: middle;
-}
-
-.cell-content {
-  display: block;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .data-table tbody tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.01);
 }
 
 .data-table tbody tr:nth-child(even):hover {
   background: rgba(139, 92, 246, 0.05);
+}
+
+.data-table td {
+  padding: 1rem 1.25rem;
+  color: var(--color-text-primary);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.cell-content {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========================================
+   Wide Columns — names / descriptions
+   ======================================== */
+.wide-column {
+  min-width: 250px;
+  max-width: 400px;
+}
+
+.wide-cell {
+  min-width: 250px;
+  max-width: 400px;
+}
+
+.data-table td.wide-cell {
+  padding: 1rem 1.25rem;
+  vertical-align: top;
+  white-space: normal;
+}
+
+.data-table th.wide-column .th-content {
+  justify-content: flex-start;
+}
+
+.wide-cell .cell-content,
+.cell-content.full-text {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  max-width: 350px;
 }
 
 /* ========================================
@@ -1158,6 +1315,7 @@
   font-family: inherit;
   cursor: pointer;
   transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
 .expand-button:hover {
@@ -1178,6 +1336,7 @@
 .expanded-row td {
   padding: 0 !important;
   background: rgba(0, 0, 0, 0.2) !important;
+  white-space: normal !important;
 }
 
 .json-container {
@@ -1185,6 +1344,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  max-width: calc(100vw - 6rem);
 }
 
 .json-header {
@@ -1327,6 +1487,7 @@
   padding: 1.5rem;
   border-top: 1px solid var(--color-border);
   background: rgba(255, 255, 255, 0.01);
+  flex-wrap: wrap;
 }
 
 .pagination-btn {
@@ -1483,549 +1644,8 @@
 }
 
 /* ========================================
-   Responsive Styles
+   Sort Dropdown
    ======================================== */
-@media (max-width: 1024px) {
-  .dashboard-container {
-    padding: 1.5rem;
-  }
-  
-  .manufacturer-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  }
-  
-  .summary-stats {
-    flex-wrap: wrap;
-  }
-  
-  .stats-content {
-    flex-wrap: wrap;
-  }
-  
-  .global-tabs {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-container {
-    padding: 1rem;
-  }
-  
-  .dashboard-header {
-    flex-direction: column;
-    text-align: center;
-    padding: 1.5rem;
-    gap: 1rem;
-  }
-  
-  .header-title {
-    font-size: 1.5rem;
-  }
-  
-  .header-subtitle {
-    font-size: 0.875rem;
-  }
-  
-  .search-input-main {
-    font-size: 1rem;
-  }
-  
-  .manufacturer-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .manufacturer-card {
-    padding: 1rem;
-  }
-  
-  .global-tabs {
-    flex-direction: column;
-  }
-  
-  .global-tab {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .global-results-table .table-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .view-all-btn {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .stats-content {
-    padding: 1rem;
-    gap: 1rem;
-  }
-  
-  .stat-divider {
-    display: none;
-  }
-  
-  .stat-item {
-    flex: 1;
-    text-align: center;
-  }
-  
-  .pagination-container {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-  
-  .pagination-pages {
-    order: -1;
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .welcome-features {
-    flex-direction: column;
-    gap: 1rem;
-    width: 100%;
-  }
-  
-  .feature-item {
-    width: 100%;
-  }
-}
-
-/* ========================================
-   Accessibility
-   ======================================== */
-.manufacturer-card:focus-visible,
-.global-tab:focus-visible,
-.expand-button:focus-visible,
-.pagination-btn:focus-visible,
-.pagination-page:focus-visible,
-.search-input-main:focus-visible,
-.view-all-btn:focus-visible {
-  outline: 2px solid var(--color-accent-purple);
-  outline-offset: 2px;
-}
-
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ========================================
-   Sort Dropdown Styles
-   ======================================== */
-
-/* Dropdown Container */
-.sort-dropdown-container {
-  position: relative;
-  z-index: 100;
-}
-
-/* Dropdown Trigger Button */
-.sort-dropdown-trigger {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  color: var(--color-text-secondary);
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-width: 220px;
-}
-
-.sort-dropdown-trigger:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--color-border-hover);
-}
-
-.sort-dropdown-trigger.open {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--dropdown-accent, var(--color-accent-purple));
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.sort-dropdown-trigger.active {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: var(--dropdown-accent, var(--color-accent-purple));
-}
-
-.sort-dropdown-trigger.active .trigger-value {
-  color: var(--dropdown-accent, var(--color-accent-purple));
-}
-
-.trigger-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05));
-  border-radius: var(--radius-sm);
-  color: var(--dropdown-accent, var(--color-accent-purple));
-  flex-shrink: 0;
-}
-
-.trigger-content {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.125rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.trigger-label {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.trigger-value {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.trigger-chevron {
-  color: var(--color-text-muted);
-  transition: transform var(--transition-normal);
-  flex-shrink: 0;
-}
-
-.trigger-chevron.rotated {
-  transform: rotate(180deg);
-}
-
-/* Dropdown Menu */
-.sort-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 280px;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: 
-    var(--shadow-lg),
-    0 0 40px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  animation: dropdownSlide 0.2s ease-out;
-  z-index: 1000;
-}
-
-@keyframes dropdownSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.dropdown-header {
-  padding: 0.875rem 1rem;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.dropdown-header span {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.dropdown-options {
-  padding: 0.5rem;
-}
-
-.dropdown-option {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  width: 100%;
-  padding: 0.875rem 1rem;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  text-align: left;
-}
-
-.dropdown-option:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dropdown-option.selected {
-  background: rgba(139, 92, 246, 0.1);
-}
-
-.dropdown-option.selected .option-icon {
-  background: var(--dropdown-accent, var(--color-accent-purple));
-  color: white;
-}
-
-.option-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-  transition: all var(--transition-fast);
-}
-
-.dropdown-option:hover .option-icon {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-text-primary);
-}
-
-.option-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.option-label {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.option-description {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.option-check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: var(--dropdown-accent, var(--color-accent-purple));
-  border-radius: 50%;
-  color: white;
-  flex-shrink: 0;
-  animation: checkPop 0.2s ease-out;
-}
-
-@keyframes checkPop {
-  0% { transform: scale(0); }
-  70% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-
-.dropdown-footer {
-  padding: 0.75rem 1rem;
-  background: rgba(239, 68, 68, 0.05);
-  border-top: 1px solid rgba(239, 68, 68, 0.1);
-}
-
-.clear-sort-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.625rem;
-  background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: var(--radius-md);
-  color: #ef4444;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.clear-sort-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.5);
-}
-
-/* ========================================
-   Table Sort Indicator
-   ======================================== */
-.table-sort-indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  margin-left: 0.375rem;
-}
-
-.table-sort-indicator:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-text-primary);
-}
-
-.table-sort-indicator.active {
-  background: rgba(139, 92, 246, 0.15);
-  color: var(--color-accent-purple);
-}
-
-/* Table Header Sortable */
-.data-table th.sortable {
-  cursor: default;
-}
-
-.data-table th.sortable .th-content {
-  display: flex;
-  align-items: center;
-}
-
-/* ========================================
-   Stats Bar Sort Active
-   ======================================== */
-.stat-item.sort-active {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(139, 92, 246, 0.1);
-  border-radius: var(--radius-md);
-}
-
-.stat-item.sort-active .stat-value {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: var(--color-accent-purple);
-  border-radius: var(--radius-sm);
-  color: white;
-}
-
-.stat-item.sort-active .stat-label {
-  color: var(--color-accent-purple);
-  font-weight: 500;
-}
-
-/* ========================================
-   Table Actions Container
-   ======================================== */
-.table-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-/* Update table header for better layout */
-.table-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-/* ========================================
-   Responsive Adjustments for Sort Dropdown
-   ======================================== */
-@media (max-width: 768px) {
-  .sort-dropdown-trigger {
-    min-width: unset;
-    padding: 0.5rem 0.75rem;
-  }
-
-  .trigger-content {
-    display: none;
-  }
-
-  .trigger-icon {
-    width: 28px;
-    height: 28px;
-  }
-
-  .trigger-chevron {
-    display: none;
-  }
-
-  .sort-dropdown-menu {
-    width: calc(100vw - 2rem);
-    max-width: 320px;
-    right: 0;
-    left: auto;
-  }
-
-  .table-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .stat-item.sort-active {
-    flex: 1;
-    justify-content: center;
-  }
-}
-
-/* ========================================
-   Focus States for Accessibility
-   ======================================== */
-.sort-dropdown-trigger:focus-visible {
-  outline: 2px solid var(--color-accent-purple);
-  outline-offset: 2px;
-}
-
-.dropdown-option:focus-visible {
-  outline: 2px solid var(--color-accent-purple);
-  outline-offset: -2px;
-}
-
-.table-sort-indicator:focus-visible {
-  outline: 2px solid var(--color-accent-purple);
-  outline-offset: 2px;
-}
-
-.clear-sort-btn:focus-visible {
-  outline: 2px solid #ef4444;
-  outline-offset: 2px;
-}
-
-/* ========================================
-   Sort Dropdown Styles - Updated
-   ======================================== */
-
 .sort-dropdown-container {
   position: relative;
   z-index: 100;
@@ -2118,7 +1738,6 @@
   transform: rotate(180deg);
 }
 
-/* Dropdown Menu */
 .sort-dropdown-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -2318,11 +1937,58 @@
 }
 
 /* ========================================
+   Column Selector (multi-sortable)
+   ======================================== */
+.column-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 0.5rem;
+  margin: 0 0.75rem 0.5rem;
+}
+
+.column-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.column-option:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.column-option.selected {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3));
+  border-color: rgba(139, 92, 246, 0.5);
+  color: white;
+}
+
+.column-option svg {
+  opacity: 0.7;
+}
+
+.column-option.selected svg {
+  opacity: 1;
+}
+
+/* ========================================
    Table Sort Indicator with Popup
    ======================================== */
 .table-sort-wrapper {
   position: relative;
   display: inline-flex;
+  z-index: 20;
 }
 
 .table-sort-indicator {
@@ -2355,7 +2021,7 @@
   top: calc(100% + 4px);
   left: 50%;
   transform: translateX(-50%);
-  min-width: 140px;
+  min-width: 160px;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -2363,6 +2029,8 @@
   z-index: 1000;
   padding: 0.375rem;
   animation: popupFade 0.15s ease-out;
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 @keyframes popupFade {
@@ -2411,7 +2079,7 @@
 }
 
 /* ========================================
-   Stats Bar Sort Active - Updated
+   Stats Bar Sort Active
    ======================================== */
 .stat-item.sort-active {
   display: flex;
@@ -2444,29 +2112,146 @@
 }
 
 /* ========================================
-   Table Actions
-   ======================================== */
-.table-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.table-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-/* ========================================
    Responsive
    ======================================== */
+@media (max-width: 1024px) {
+  .dashboard-container {
+    padding: 1.5rem;
+  }
+
+  .manufacturer-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .summary-stats {
+    flex-wrap: wrap;
+  }
+
+  .stats-content {
+    flex-wrap: wrap;
+  }
+
+  .global-tabs {
+    padding: 1rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.75rem 1rem;
+  }
+
+  .cell-content {
+    max-width: 180px;
+  }
+
+  .json-container {
+    max-width: calc(100vw - 4rem);
+  }
+
+  :root {
+    --table-max-height: 70vh;
+  }
+}
+
 @media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  .header-icon-wrapper {
+    margin: 0 auto;
+  }
+
+  .header-title {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.875rem;
+  }
+
+  /* Logout button responsive */
+  .logout-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .search-input-main {
+    font-size: 1rem;
+  }
+
+  .manufacturer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manufacturer-card {
+    padding: 1rem;
+  }
+
+  .global-tabs {
+    flex-direction: column;
+  }
+
+  .global-tab {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .global-results-table .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .view-all-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stats-content {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .stat-divider {
+    display: none;
+  }
+
+  .stat-item {
+    flex: 1;
+    text-align: center;
+  }
+
+  .pagination-container {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .pagination-pages {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .welcome-features {
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .feature-item {
+    width: 100%;
+  }
+
+  /* Sort dropdown responsive */
   .sort-dropdown-trigger {
     min-width: unset;
     padding: 0.5rem 0.75rem;
@@ -2496,16 +2281,82 @@
     width: 100%;
     justify-content: flex-end;
   }
+
+  .stat-item.sort-active {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Table responsive */
+  .data-table th,
+  .data-table td {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .cell-content {
+    max-width: 150px;
+  }
+
+  .wide-column {
+    min-width: 200px;
+  }
+
+  .wide-cell {
+    min-width: 200px;
+  }
+
+  .json-container {
+    max-width: calc(100vw - 3rem);
+    margin: 0.5rem;
+  }
+
+  .table-container::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  :root {
+    --table-max-height: 65vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .logout-btn span {
+    display: none;
+  }
+
+  .logout-btn {
+    width: auto;
+    padding: 0.625rem;
+    border-radius: var(--radius-md);
+  }
 }
 
 /* ========================================
-   Focus States
+   Accessibility
    ======================================== */
+.manufacturer-card:focus-visible,
+.global-tab:focus-visible,
+.expand-button:focus-visible,
+.pagination-btn:focus-visible,
+.pagination-page:focus-visible,
+.search-input-main:focus-visible,
+.view-all-btn:focus-visible,
 .sort-dropdown-trigger:focus-visible,
 .dropdown-option:focus-visible,
 .table-sort-indicator:focus-visible,
 .popup-option:focus-visible,
-.clear-sort-btn:focus-visible {
+.clear-sort-btn:focus-visible,
+.logout-btn:focus-visible {
   outline: 2px solid var(--color-accent-purple);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
